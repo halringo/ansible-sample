@@ -1,0 +1,36 @@
+---
+- name: Check pgdg.list
+  stat: path=/etc/apt/sources.list.d/pgdg.list
+  register: check_pgdg_list
+
+- name: Create pgdg.list
+  shell: sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+  become: true
+  when: not check_pgdg_list.stat.exists
+
+- name: Check imported
+  shell: apt-key list | grep ACCC4CF8
+  register: apt_key_check
+  failed_when: apt_key_check.rc not in [0, 1]
+
+- debug: var=apt_key_check
+
+- name: Check imported hoge
+  shell: apt-key list | grep hoge
+  register: apt_key_hoge
+  failed_when: apt_key_hoge.rc not in [0, 1]
+
+- debug: var=changed
+
+- debug: var=apt_key_hoge
+
+
+- name: Import the repository key
+  shell: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+  when: apt_key_check.rc == 1
+
+- name: Install Postgresql
+  apt: name=postgresql-9.5 update_cache=yes
+  become: true
+
+- debug: var=changed

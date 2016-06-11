@@ -2,7 +2,7 @@
 - name: test connection
   ping:
 
-- name: OS Upgrade
+- name: Update all packages
   apt: update_cache=yes upgrade=full
   become: true
 
@@ -10,14 +10,21 @@
   apt: name=language-pack-ja update_cache=yes
   become: true
 
-- name: Setting Timezone 1
+- name: Check timezone
+  shell: grep 'Asia/Tokyo' /etc/timezone
+  register: check_timezone
+  failed_when: check_timezone.rc not in [0, 1]
+
+- name: Setting timezone 1
   shell: sh -c 'echo "Asia/Tokyo" > /etc/timezone'
   become: true
+  when: check_timezone.rc == 1
 
-- name: Setting Timezone 2
+- name: Setting timezone 2
   shell: dpkg-reconfigure --frontend noninteractive tzdata
   become: true
+  when: check_timezone.rc == 1
 
-- name: Update Locale to Japanese
+- name: Update locale to Japanese
   shell: update-locale LANG=ja_JP.UTF-8
   become: true
